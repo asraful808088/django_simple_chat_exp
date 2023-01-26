@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Chat Exp</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      .root {
+        height: 800px;
+        display: flex;
+        flex-direction: column;
+      }
+      .items {
+        position: relative;
+      }
+      .root .input-box {
+        min-height: 50px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        margin-top: 10px;
+      }
+      .root .input-box::-webkit-scrollbar {
+        width: 0;
+      }
+      .root .input-box .input-side {
+        position: relative;
+        height: 100%;
+        width: 100%;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .root .input-box .input-side input {
+        font-size: 18px;
+        height: 100%;
+        width: 100%;
+        padding: 5px;
+        border: none;
+        outline: none;
+        background-color: rgba(0, 0, 0, 0.363);
+      }
+      .root .input-box .button {
+        height: 100%;
+        min-width: 50px;
+        position: relative;
+        margin-left: 30px;
+        cursor: pointer;
+        content: "\2B9A";
+        font-size: 50px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: 0.5s;
+      }
+      .root .input-box .button:hover {
+        transform: scale(0.7);
+      }
+      .root .chet-box {
+        height: 100%;
+        width: 100%;
+        background-color: rgb(26, 28, 31);
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column-reverse;
+        overflow-y: scroll;
+        padding: 10px;
+      }
+      .root .chet-box::-webkit-scrollbar {
+        width: 0;
+      }
+      .root .chet-box .chat-text {
+        max-width: 400px;
+        position: relative;
+        padding: 10px;
+        border-radius: 10px;
+        margin: 10px;
+      }
+      .root .chet-box .mychat {
+        align-self: flex-end;
+        background-color: antiquewhite;
+      }
+      .root .chet-box .oposite {
+        align-self: flex-start;
+        background-color: rgb(211, 245, 245);
+      }
+      @media only screen and (min-width: 300px) {
+        .root {
+          width: 400px;
+          height: 800px;
+          margin: auto;
+          margin-top: 50px;
+        }
+      }
+      @media only screen and (min-width: 550px) {
+        .root {
+          width: 500px;
+        }
+      }
+      @media only screen and (min-width: 1200px) {
+        .root {
+          width: 1200px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="root">
+      <ul class="items chet-box" id="chat-box"></ul>
+      <div class="items input-box">
+        <div class="input-side">
+          <input type="text" name="" id="textmessage" placeholder="message" />
+        </div>
+        <div class="button" onclick="sendMessage()">
+          <span>&#11162;</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const chatBox = document.getElementById("chat-box");
+      const textmessage = document.getElementById("textmessage");
+      let myUserId = "name";
+      const ws = new WebSocket("ws://192.168.0.104:8000/ws/chat");
+      ws.onopen = (e) => {
+        ws.send(
+          JSON.stringify({
+            type: "get_id",
+          })
+        );
+      };
+      ws.onmessage = (e) => {
+        const parseJson = JSON.parse(e.data);
+
+        if (parseJson.type === "init") {
+          console.log("init");
+          myUserId = parseJson.userId;
+        } else if (
+          parseJson.type === "send_message" &&
+          parseJson.sender != myUserId
+        ) {
+          addMessage(parseJson.sender, parseJson.message, true);
+        }
+      };
+      function sendMessage() {
+        if (textmessage.value) {
+          addMessage(myUserId, textmessage.value);
+          ws.send(
+            JSON.stringify({
+              type: "message",
+              sender: myUserId,
+              message: textmessage.value,
+            })
+          );
+          textmessage.value = "";
+        }
+      }
+
+      //alternative option tag.innertext
+      function addMessage(id, text, oposite) {
+        const createtext = document.createTextNode(text);
+        const header = document.createElement("li");
+        const h3 = document.createElement("h3");
+        const h3text = document.createTextNode("userid : ");
+        const span = document.createElement("span");
+        span.appendChild(document.createTextNode(id));
+        const hr = document.createElement("hr");
+        h3.appendChild(h3text);
+        h3.appendChild(span);
+        header.classList.add("chat-text");
+        if (oposite) {
+          header.classList.add("oposite");
+        } else {
+          header.classList.add("mychat");
+        }
+        header.appendChild(h3);
+        header.appendChild(hr);
+        header.appendChild(createtext);
+        chatBox.insertBefore(header, chatBox.children[0]);
+      }
+    </script>
+  </body>
+</html>
